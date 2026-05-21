@@ -1,5 +1,3 @@
-import { renderMedia, selectComposition } from '@remotion/renderer';
-import { bundle } from '@remotion/bundler';
 import path from 'path';
 import { VIDEO_CONFIG } from '../../remotion/VideoComposition';
 
@@ -40,6 +38,11 @@ export async function renderVideo(options: RenderOptions): Promise<{
   outputPath: string;
   durationInFrames: number;
 }> {
+  const [{ renderMedia, selectComposition }, { bundle }] = await Promise.all([
+    import('@remotion/renderer'),
+    import('@remotion/bundler'),
+  ]);
+
   const bundled = await bundle({
     entryPoint: path.join(process.cwd(), 'remotion', 'index.ts'),
     webpackOverride: (config) => config,
