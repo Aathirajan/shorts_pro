@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la src/app/\\\\\\(dashboard\\\\\\)/projects/new/)",
+      "Bash(npm run:*)",
+      "Bash(ls -la F:AIAUTOMATIONytshortspro/.env*)",
+      "Bash(F:AIAUTOMATIONytshortspro/.env.example:*)"
+    ]
+  }
+}

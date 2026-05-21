@@ -1,0 +1,410 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum Plan {
+  FREE
+  CREATOR
+  PRO
+  AGENCY
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?
+  plan          Plan      @default(FREE)
+  planExpiresAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // AI Credit usage
+  avatarMinutesUsed Int @default(0)
+  avatarMinutesLimit Int @default(0) // 0 for free, 10 creator, 30 pro, unlimited agency
+  magicClipsUsed    Int @default(0)
+  magicClipsLimit   Int @default(0) // 3 free, 20 creator, unlimited pro/agency
+
+  // Relations
+  accounts       Account[]
+  sessions       Session[]
+  channels       Channel[]
+  projects       Project[]
+  presets        Preset[]
+  folders        Folder[]
+  audits         Audit[]
+  subscription   Subscription?
+  renderJobs     RenderJob[]
+  avatarJobs     AvatarJob[]
+  magicClipJobs  MagicClipJob[]
+  teamMembers    TeamMember[]
+  ownedTeams     Team[]
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  stripeCustomerId       String?
+  stripeSubscriptionId     String?
+  stripePriceId            String?
+  stripeCurrentPeriodEnd   DateTime?
+  stripeCurrentPeriodStart DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  ownerId     String
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members TeamMember[]
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  teamId String
+  userId String
+  role   String @default("member") // member, admin
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model Channel {
+  id            String   @id @default(cuid())
+  userId        String
+  youtubeId     String   @unique
+  title         String
+  description   String?
+  thumbnailUrl  String?
+  subscriberCount Int    @default(0)
+  viewCount     Int      @default(0)
+  videoCount    Int      @default(0)
+  accessToken   String?
+  refreshToken  String?
+  tokenExpiresAt DateTime?
+  niche         String?  // Channel niche/topic category
+  keywords      String[] // Channel-level keywords
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects    Project[]
+  trustScores TrustScore[]
+
+  @@index([userId])
+}
+
+model TrustScore {
+  id            String   @id @default(cuid())
+  channelId     String
+  score         Int      // 0-100
+  consistency   Int      // Upload consistency sub-score
+  metadata      Int      // Metadata accuracy sub-score
+  engagement    Int      // Engagement signals sub-score
+  calculatedAt  DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@index([calculatedAt])
+}
+
+enum ProjectStatus {
+  DRAFT
+  PROCESSING
+  READY
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  userId          String
+  channelId       String?
+  title           String
+  description     String?
+  status          ProjectStatus @default(DRAFT)
+
+  // Source media
+  sourceUrl       String?       // For Magic Clips
+  sourceVideoUrl  String?       // Uploaded or processed video
+  thumbnailUrl    String?
+  duration        Int?          // Duration in seconds
+
+  // Viral prediction
+  viralScore      Int?          // 1-100
+  nicheAlignment  Float?        // 0-1 percentage
+  hookStrength    Int?          // 1-10
+
+  // YouTube metadata
+  youtubeVideoId  String?
+  scheduledFor    DateTime?
+  publishedAt     DateTime?
+  tags            String[]
+  categoryId      String?
+
+  // Audit results
+  auditCompleted  Boolean       @default(false)
+  auditIssues     Json?         // Array of issues found
+
+  // Render output
+  renderUrl       String?       // Final MP4 URL
+  muxAssetId      String?
+  muxPlaybackId   String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel  Channel?   @relation(fields: [channelId], references: [id])
+  captions Caption[]
+  audioTracks AudioTrack[]
+  audits   Audit[]
+  renderJobs RenderJob[]
+
+  @@index([userId])
+  @@index([channelId])
+  @@index([status])
+}
+
+model Caption {
+  id          String @id @default(cuid())
+  projectId   String
+  text        String
+  startTime   Float  // Start time in seconds
+  endTime     Float  // End time in seconds
+  words       Json?  // Array of word objects with timestamps
+  style       String @default("bold") // bold, minimal, neon, subtitle
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model AudioTrack {
+  id          String @id @default(cuid())
+  projectId   String
+  type        String // music, sfx, voiceover
+  name        String
+  url         String
+  volume      Float  @default(1.0)
+  startTime   Float  @default(0)
+  endTime     Float?
+  fadeIn      Float  @default(0)
+  fadeOut     Float  @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+enum AuditStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model Audit {
+  id              String       @id @default(cuid())
+  userId          String
+  projectId       String?
+  channelId       String?
+  status          AuditStatus  @default(PENDING)
+
+  // Results
+  trustScore      Int?
+  viralScore      Int?
+  nicheAlignment  Float?
+  hookStrength    Int?
+  shadowbanRisk   String?      // low, medium, high
+  issues          Json?        // Detailed issues array
+  recommendations Json?        // Action items
+
+  createdAt       DateTime     @default(now())
+  completedAt     DateTime?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model Preset {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+
+  // Caption settings
+  captionStyle    String  @default("bold")
+  captionColor    String  @default("#FFFFFF")
+  captionSize     String  @default("medium") // small, medium, large
+  showEmojis      Boolean @default(true)
+  highlightPowerWords Boolean @default(true)
+
+  // B-Roll settings
+  autoBRoll       Boolean @default(true)
+  bRollFrequency  Int     @default(3) // seconds
+
+  // Effects
+  autoZoom        Boolean @default(true)
+  zoomFrequency   Int     @default(3)
+
+  // Audio
+  musicVolume     Float   @default(0.3)
+  duckingEnabled  Boolean @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Folder {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent Folder? @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children Folder[] @relation("FolderHierarchy")
+  assets Asset[]
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Asset {
+  id          String   @id @default(cuid())
+  folderId    String
+  name        String
+  type        String   // video, audio, image
+  url         String
+  thumbnailUrl String?
+  duration    Int?     // For audio/video
+  size        Int      // File size in bytes
+  metadata    Json?    // Additional metadata
+  createdAt   DateTime @default(now())
+
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@index([folderId])
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model RenderJob {
+  id          String    @id @default(cuid())
+  userId      String
+  projectId   String
+  status      JobStatus @default(QUEUED)
+  progress    Int       @default(0) // 0-100
+  renderUrl   String?
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model AvatarJob {
+  id            String    @id @default(cuid())
+  userId        String
+  script        String
+  avatarId      String    // Which avatar to use
+  voiceId       String?   // Which voice
+  status        JobStatus @default(QUEUED)
+  progress      Int       @default(0)
+  outputUrl     String?
+  duration      Int?      // Generated video duration
+  error         String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model MagicClipJob {
+  id            String    @id @default(cuid())
+  userId        String
+  sourceUrl     String    // YouTube URL
+  sourceVideoId String?   // Extracted video ID
+  status        JobStatus @default(QUEUED)
+  progress      Int       @default(0)
+  clips         Json?     // Array of extracted clips
+  error         String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
