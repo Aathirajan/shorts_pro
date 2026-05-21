@@ -33,7 +33,7 @@ export function RecentProjects({ projects, className }: RecentProjectsProps) {
   }
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+    const variants: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
       DRAFT: 'default',
       PROCESSING: 'warning',
       READY: 'success',

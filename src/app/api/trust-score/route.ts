@@ -217,7 +217,7 @@ function calculateMetadataScore(channel: {
 
 function calculateEngagementScore(
   channel: { subscriberCount: number; viewCount: number },
-  freshStats?: { videos: any[]; subscriberCount: number; viewCount: number }
+  freshStats?: { videos: any[]; subscriberCount: number; viewCount: number } | null
 ): number {
   // Use fresh stats if available
   const stats = freshStats || {

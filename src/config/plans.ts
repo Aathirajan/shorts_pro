@@ -98,7 +98,10 @@ export function getPlanLimits(plan: Plan): PlanLimits {
   return PLAN_LIMITS[plan];
 }
 
-export function hasFeature(plan: Plan, feature: keyof PlanLimits['features']): boolean {
+export function hasFeature(
+  plan: Plan,
+  feature: Exclude<keyof PlanLimits['features'], 'teamMembers'>
+): boolean {
   return PLAN_LIMITS[plan].features[feature];
 }
 

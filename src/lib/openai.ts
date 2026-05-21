@@ -20,7 +20,7 @@ export async function transcribeAudio(audioUrl: string): Promise<{
   }>;
 }> {
   const response = await openai.audio.transcriptions.create({
-    file: await fetch(audioUrl).then((r) => r.blob()),
+    file: await fetch(audioUrl).then((r) => r.blob() as any),
     model: 'whisper-1',
     response_format: 'verbose_json',
     timestamp_granularities: ['word'],
@@ -32,7 +32,7 @@ export async function transcribeAudio(audioUrl: string): Promise<{
       end: segment.end,
       text: segment.text,
       words:
-        segment.words?.map((w) => ({
+        (segment as any).words?.map((w: any) => ({
           word: w.word,
           start: w.start,
           end: w.end,

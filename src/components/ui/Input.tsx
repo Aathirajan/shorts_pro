@@ -7,10 +7,11 @@ export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  icon?: React.ReactNode;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, label, error, ...props }, ref) => {
+  ({ className, type, label, error, icon, ...props }, ref) => {
     return (
       <div className="w-full">
         {label && (
@@ -18,19 +19,27 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <input
-          type={type}
-          className={cn(
-            'flex w-full rounded-button border border-border bg-surface px-3 py-2',
-            'text-sm text-text placeholder:text-text-muted',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'border-accent-red focus-visible:ring-accent-red',
-            className
+        <div className="relative">
+          {icon && (
+            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted">
+              {icon}
+            </div>
           )}
-          ref={ref}
-          {...props}
-        />
+          <input
+            type={type}
+            className={cn(
+              'flex w-full rounded-button border border-border bg-surface px-3 py-2',
+              icon && 'pl-10',
+              'text-sm text-text placeholder:text-text-muted',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              error && 'border-accent-red focus-visible:ring-accent-red',
+              className
+            )}
+            ref={ref}
+            {...props}
+          />
+        </div>
         {error && (
           <p className="mt-1 text-xs text-accent-red">{error}</p>
         )}

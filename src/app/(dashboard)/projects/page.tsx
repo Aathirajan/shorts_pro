@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn, formatRelativeTime, formatDuration } from '@/lib/utils';
+import { ProjectWithRelations } from '@/types';
 
 type ViewMode = 'grid' | 'list';
 type FilterStatus = 'all' | 'draft' | 'ready' | 'published';
@@ -43,7 +44,7 @@ export default function ProjectsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
+    const variants: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
       DRAFT: 'default',
       PROCESSING: 'warning',
       READY: 'success',
@@ -215,7 +216,7 @@ function ProjectRow({
   onDelete,
 }: {
   project: ProjectWithRelations;
-  getStatusBadge: (status: string) => 'default' | 'success' | 'warning' | 'error';
+  getStatusBadge: (status: string) => 'default' | 'success' | 'warning' | 'error' | 'info';
   onDelete: (projectId: string) => void;
 }) {
   return (

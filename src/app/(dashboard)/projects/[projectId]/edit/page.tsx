@@ -33,6 +33,22 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 
+interface ProjectClip {
+  id: string;
+  trackId: string;
+  startTime: number;
+  duration: number;
+  name: string;
+  type: 'video' | 'broll' | 'audio' | 'caption';
+}
+
+interface ProjectTrack {
+  id: string;
+  name: string;
+  type: 'video' | 'audio' | 'caption';
+  clips: ProjectClip[];
+}
+
 // Mock project data
 const mockProject = {
   id: '1',
@@ -100,7 +116,7 @@ export default function ProjectEditorPage({
   const [activeTab, setActiveTab] = useState('captions');
   const [zoom, setZoom] = useState(1);
   const [showAudit, setShowAudit] = useState(false);
-  const [tracks, setTracks] = useState(mockTracks);
+  const [tracks, setTracks] = useState<ProjectTrack[]>(mockTracks);
 
   const handleTimeChange = useCallback((time: number) => {
     setCurrentTime(Math.max(0, Math.min(mockProject.duration, time)));

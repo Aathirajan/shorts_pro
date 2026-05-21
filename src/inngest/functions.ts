@@ -1,6 +1,5 @@
 import { inngest } from './client';
 import { prisma } from '@/lib/prisma';
-import { renderVideo } from '@/lib/remotion';
 import { uploadToR2 } from '@/lib/r2';
 
 // Video rendering function
@@ -9,6 +8,8 @@ export const renderVideoFunction = inngest.createFunction(
   { event: 'video/render.requested' },
   async ({ event, step }) => {
     const { projectId, userId, jobId } = event.data;
+
+    const { renderVideo } = await import('@/lib/remotion');
 
     // Get project details
     const project = await step.run('get-project', async () => {

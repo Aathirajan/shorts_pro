@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       ContentType: contentType,
     });
 
-    const uploadUrl = await getSignedUrl(r2Client, putCommand, {
+    const uploadUrl = await getSignedUrl(r2Client as any, putCommand as any, {
       expiresIn: 3600, // 1 hour
     });
 

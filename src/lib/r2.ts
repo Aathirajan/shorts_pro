@@ -77,7 +77,7 @@ export async function getPresignedUploadUrl(
     ContentType: contentType,
   });
 
-  return getSignedUrl(r2Client, command, { expiresIn });
+  return getSignedUrl(r2Client as any, command as any, { expiresIn });
 }
 
 export async function getPresignedDownloadUrl(
@@ -89,7 +89,7 @@ export async function getPresignedDownloadUrl(
     Key: key,
   });
 
-  return getSignedUrl(r2Client, command, { expiresIn });
+  return getSignedUrl(r2Client as any, command as any, { expiresIn });
 }
 
 export async function deleteFromR2(key: string): Promise<void> {
